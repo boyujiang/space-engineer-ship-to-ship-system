@@ -1,0 +1,386 @@
+int ScanMode =1; //0 == regular scan, 1 == Camera guided and ship lock
+const Double ScanRange = 3000;
+Double ScanTime = ScanRange/2000;
+string Radiotag = "ColonialMissleTag"; //do not leak this tag
+MyRelationsBetweenPlayerAndBlock Stance = MyRelationsBetweenPlayerAndBlock.Owner;
+//do not touch any of those global variables below for general purpose
+List<IMyCameraBlock> CamRow1 = new List<IMyCameraBlock>();
+List<IMyCameraBlock> CamRow2= new List<IMyCameraBlock>();
+List<IMyCameraBlock> CamRow3= new List<IMyCameraBlock>();
+List<IMyCameraBlock> CamRow4= new List<IMyCameraBlock>();
+List<IMyCameraBlock> CamRow5= new List<IMyCameraBlock>();
+List<IMyCameraBlock> CamRow6= new List<IMyCameraBlock>();
+List<List<IMyCameraBlock>> CamRowList= new List<List<IMyCameraBlock>>();
+IMyShipController ControlSeat;
+IMyReflectorLight LockLight;
+Vector3D Relative_Coordinate = new Vector3D();
+
+//List<MyDetectedEntityInfo> DetectedList = new List<MyDetectedEntityInfo>();
+List<IMyCameraBlock> Charged_Cameras = new List<IMyCameraBlock>();
+bool InitializeStatus = false;
+bool ScanInitial = false;
+
+IMyTextPanel RadarLCD;
+IMyTextPanel InfoLCD;
+IMyTimerBlock Timer;
+
+const float minAngle = -45f;
+const float maxAngle = 45f;
+float step = 1f;
+
+float x;
+float y;
+
+int Number_Col = 9;
+int Number_Row = 6; 
+
+int state = 0;
+int test = 1;
+
+Vector3D LockPoint= new Vector3D();
+
+Vector3D LastVelocity;
+bool LockOn;
+Double frame;
+Double Scanspeed;
+Vector3D Deviation;
+long lastTime;
+
+IMyRadioAntenna Antenna;
+long EntityId;
+public Program()
+{
+Runtime.UpdateFrequency = UpdateFrequency.Update1;
+}
+
+public void Save()
+{
+}
+
+public void Main(string argument, UpdateType updateSource) //increment y and x instead of individual camera
+{
+    if (argument == "poweroff"){state = 1;}
+    if (argument == "ResumeRegular"){state = 2;}  
+    if (state == 1){InitializeStatus = false;}
+    if (! InitializeStatus) {initialize();}
+    if (state == 2){ScanInitial = false;} // 2 different states from default
+    if (! ScanInitial){ ScanStart();}
+    float RowCount = -90f/Number_Row;
+    
+    if (state == 0){
+        if (ScanMode == 0){
+        bool AddStep = false;
+        
+        MyDetectedEntityInfo Target = new MyDetectedEntityInfo();
+        MyDetectedEntityInfo info;
+        foreach (List<IMyCameraBlock> CameraRow in CamRowList){
+            RowCount += 90f/Number_Row;
+            float ColCount = -90f/Number_Col;
+            //RadarLCD.WriteText( CameraRow[0].AvailableScanRange.ToString()  + "\n" , true);
+            foreach (IMyCameraBlock Camera in CameraRow){
+                //RadarLCD.WriteText( Camera.AvailableScanRange.ToString()  + "\n" , true);
+                if (Camera.AvailableScanRange > ScanRange){
+                    AddStep = true;
+                    //RadarLCD.WriteText( AddStep.ToString()  + "\n" , false);
+          
+                ColCount += 90f/Number_Col;
+                float Pitch = (y+RowCount);
+                float Yaw = (x+ColCount);
+                if (Pitch > maxAngle){
+                    Pitch -= 90;
+                } 
+
+                if (Yaw > maxAngle){
+                    Yaw -= 90;
+                } 
+                test++;
+                Echo(test.ToString());
+                info = Camera.Raycast(ScanRange, Pitch, Yaw);
+            
+                if (! info.IsEmpty() ){
+                    if (info.Relationship == Stance ){
+                        Target = info;
+                    }
+                    break;
+                }  
+            }
+        }
+    }
+   RadarLCD.WriteText( AddStep.ToString()  + "\n" , true);
+   //RadarLCD.WriteText( "\n" , false);
+  if (AddStep){
+     x += step;
+     if (x > minAngle + 10){
+        x = minAngle;
+        y += step;
+     }
+    
+     if (y > maxAngle){
+        y = minAngle;
+     }
+     RadarLCD.WriteText( x.ToString()  + "\n" , false);
+     RadarLCD.WriteText( y.ToString()  + "\n" , true);
+    }
+  if ( ! Target.IsEmpty() ){
+         //InfoLCD.WriteText(Target.Velocity.ToString()  + "\n" , false);
+         InfoLCD.WriteText(Target.Position.ToString()  + "\n" , false);
+         InfoLCD.WriteText(Target.Name.ToString() + "\n", true);
+        Relative_Coordinate = Vector3D.Subtract(Target.Position, ControlSeat.GetPosition());
+        InfoLCD.WriteText(Relative_Coordinate.ToString() + "\n", true);
+        InfoLCD.WriteText(Relative_Coordinate.Length().ToString() + "\n", true);
+        
+    }
+    }
+    if (ScanMode == 1){
+        Scanspeed = ScanRange * 60/((CamRow1.Count+CamRow2.Count+CamRow3.Count+CamRow4.Count+CamRow5.Count+CamRow6.Count) *2000f);
+        frame++;
+        if (frame > Scanspeed){            
+            MyDetectedEntityInfo Target;
+            if (! LockOn){
+                Deviation = new Vector3D();
+                LockLight.Enabled = false;
+                Target = SingleForwardScan();
+                InfoLCD.WriteText(Charged_Cameras.Count.ToString()  + "\n" , false);
+                if (! Target.IsEmpty()){
+                    InfoLCD.WriteText(Target.Position.ToString()  + "\n" , true);
+                    InfoLCD.WriteText(Target.Name.ToString() + "\n", true);
+                    InfoLCD.WriteText(Target.TimeStamp.ToString() + "\n", true);
+                    InfoLCD.WriteText(Target.Velocity.ToString()  + "\n" , true);
+                    Vector3D HitPosition;
+                    Vector3D.TryParse(Target.HitPosition.ToString(), out HitPosition);
+                    Deviation = Vector3D.Subtract(Target.Position, HitPosition);
+                    Vector3D Velocity = new Vector3D(Target.Velocity);
+                    LastVelocity = Velocity;
+                    LockPoint =  Target.Position + (long)frame*Velocity/60;
+                    InfoLCD.WriteText(Target.HitPosition.ToString()  + "\n" , true);
+                    InfoLCD.WriteText(LockPoint.ToString() + "\n", true);
+                    lastTime = Target.TimeStamp;
+                    LockOn = true;
+                    EntityId = Target.EntityId;
+                }
+                frame = 0f;
+            }
+            else{
+                bool SecondScan = true;
+                LockLight.Enabled = true;
+                Target = SinglePointScan(LockPoint);
+                  if (! Target.IsEmpty()){
+                    InfoLCD.WriteText(Charged_Cameras.Count.ToString()  + "\n" , false);
+                    InfoLCD.WriteText(Target.Position.ToString()  + "\n" , true);
+                    InfoLCD.WriteText(Target.Name.ToString() + "\n", true);
+                    InfoLCD.WriteText(Target.TimeStamp.ToString() + "\n", true);
+                    InfoLCD.WriteText(Target.Velocity.ToString()  + "\n" , true);
+                    InfoLCD.WriteText((Target.TimeStamp - lastTime).ToString()  + "\n" , true);
+                    InfoLCD.WriteText(Target.Orientation.ToString()  + "\n" , true);
+                    Vector3D Velocity = new Vector3D(Target.Velocity);
+                    LastVelocity = Velocity;
+                    LockPoint =  Target.Position  + (Target.TimeStamp - lastTime)*Velocity/1000;
+                    lastTime = Target.TimeStamp;
+                    SecondScan = false;
+                    //string Message = Target.Position.ToString();
+                    IGC.SendBroadcastMessage(Radiotag, Target.Position, TransmissionDistance.TransmissionDistanceMax);
+                    frame = 0f;
+                }
+                if (SecondScan){ LockPoint =  LockPoint  + (Target.TimeStamp - lastTime)*LastVelocity/1000 ;
+                    Target = SinglePointScan(LockPoint);
+                      if (! Target.IsEmpty()){
+                        InfoLCD.WriteText(Charged_Cameras.Count.ToString()  + "\n" , false);
+                        InfoLCD.WriteText(Target.Position.ToString()  + "\n" , true);
+                        InfoLCD.WriteText(Target.Name.ToString() + "\n", true);
+                        InfoLCD.WriteText(Target.TimeStamp.ToString() + "\n", true);
+                        Vector3D Velocity = new Vector3D(Target.Velocity);
+                        LastVelocity = Velocity;
+                        LockPoint =  Target.Position  + (Target.TimeStamp - lastTime)*Velocity/1000;
+                        lastTime = Target.TimeStamp;
+                        SecondScan = false;
+                        frame = 0f;
+                    }
+                }
+               if (Target.IsEmpty()) {LockOn = false;}
+            }
+            
+        }
+
+    }   
+    }
+}
+
+//handles start and stop camera array.
+void initialize(){
+    RadarLCD = GridTerminalSystem.GetBlockWithName("Radar_LCD") as IMyTextPanel;
+    InfoLCD = GridTerminalSystem.GetBlockWithName("Info_LCD") as IMyTextPanel;
+    Timer = GridTerminalSystem.GetBlockWithName("Timer") as IMyTimerBlock;
+    ControlSeat = GridTerminalSystem.GetBlockWithName("Flight Seat") as IMyShipController;
+    LockLight = GridTerminalSystem.GetBlockWithName("Rotating_Light") as IMyReflectorLight;
+    Antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
+    IGC.RegisterBroadcastListener(Radiotag);
+    GridTerminalSystem.GetBlocksOfType(CamRow1, b => b.CustomName.Contains("CameraRow#1"));
+    GridTerminalSystem.GetBlocksOfType(CamRow2, b => b.CustomName.Contains("CameraRow#2"));
+    GridTerminalSystem.GetBlocksOfType(CamRow3, b => b.CustomName.Contains("CameraRow#3"));
+    GridTerminalSystem.GetBlocksOfType(CamRow4, b => b.CustomName.Contains("CameraRow#4"));
+    GridTerminalSystem.GetBlocksOfType(CamRow5, b => b.CustomName.Contains("CameraRow#5"));
+   GridTerminalSystem.GetBlocksOfType(CamRow6, b => b.CustomName.Contains("CameraRow#6"));
+    if (state == 0){
+    if (CamRow1.Count > 0) { 
+        CamRowList.Add(CamRow1);
+    //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow1)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow2.Count > 0) {//making sure the group is not empty
+        CamRowList.Add(CamRow2);
+        foreach (IMyCameraBlock Camera in CamRow2)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow3.Count > 0) { //making sure the group is not empty
+        CamRowList.Add(CamRow3);
+        foreach (IMyCameraBlock Camera in CamRow3)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow4.Count > 0) { //making sure the group is not empty
+        CamRowList.Add(CamRow4);
+        foreach (IMyCameraBlock Camera in CamRow4)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow5.Count > 0) { //making sure the group is not empty
+        CamRowList.Add(CamRow5);
+        foreach (IMyCameraBlock Camera in CamRow5)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+    if (CamRow6.Count > 0) { //making sure the group is not empty
+        CamRowList.Add(CamRow6);
+        foreach (IMyCameraBlock Camera in CamRow6)
+        {
+            if (! Camera.EnableRaycast){Camera.EnableRaycast = true;} // enabling all Cameras
+        }
+    }
+     InitializeStatus = true;
+    }
+
+    if (state == 1){
+    Charged_Cameras.Clear();
+    CamRowList.Clear();
+    if (CamRow1.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow1)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // disabling all Cameras
+        }
+    }
+    if (CamRow3.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow3)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // disabling all Cameras
+        }
+    }
+    if (CamRow4.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow4)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow5.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow5)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // enabling all Cameras
+        }
+    }
+
+    if (CamRow2.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow2)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // enabling all Cameras
+        }
+    }
+    if (CamRow6.Count > 0) { //making sure the group is not empty
+        foreach (IMyCameraBlock Camera in CamRow6)
+        {
+            if (Camera.EnableRaycast){Camera.EnableRaycast = false;} // enabling all Cameras
+        }
+    }
+     InitializeStatus = false;
+     state = 0; // reset to ready to run
+     test = 0;
+     Me.Enabled = false; //poweroff the entire radar array and program
+    }
+    if (CamRow1.Count > 0){}
+    if (CamRow1[0].CanScan(ScanRange) ){ //check for power status
+       RadarLCD.WriteText( "Camera is charged \n" , false); 
+    }
+    else{
+        RadarLCD.WriteText( "Camera requires more power \n" , true);
+        state = 0; // reset to ready to run
+        Me.Enabled = false; //poweroff the program if there is no sufficient power.
+    }
+    
+   
+    
+}
+
+void ScanStart(){
+x = minAngle;
+y = minAngle;
+ScanInitial = true;
+}
+MyDetectedEntityInfo SingleForwardScan(){   
+   if (Charged_Cameras.Count < 4){
+       Charged_Cameras.Clear();
+       Available_Camera();
+    }    
+    MyDetectedEntityInfo ITarget = new  MyDetectedEntityInfo();
+    Vector3D Point = new Vector3D();
+            if (Charged_Cameras.Count >0){
+                Point = Charged_Cameras[0].GetPosition() + Charged_Cameras[0].WorldMatrix.Forward*ScanRange;
+                ITarget = Charged_Cameras[0].Raycast(Point);
+                Charged_Cameras.RemoveAt(0);
+                if (! ITarget.IsEmpty()){
+                    return ITarget;
+                }
+    }
+
+    return ITarget;
+}
+
+MyDetectedEntityInfo SinglePointScan(Vector3D Point){   
+   if (Charged_Cameras.Count < 4){
+       Charged_Cameras.Clear();
+       Available_Camera();
+    }    
+    MyDetectedEntityInfo ITarget = new  MyDetectedEntityInfo();
+            if (Charged_Cameras.Count >0){
+                Vector3D PointF = Point;
+                ITarget = Charged_Cameras[0].Raycast(Point);
+                Charged_Cameras.RemoveAt(0);
+                if (! ITarget.IsEmpty()){
+                    return ITarget;
+                }
+    }
+
+    return ITarget;
+}
+
+
+void Available_Camera(){ 
+    foreach (List<IMyCameraBlock> CameraRow in CamRowList){
+        foreach (IMyCameraBlock Camera in CameraRow){
+            if (Camera.AvailableScanRange > ScanRange && Camera.IsFunctional){
+                Charged_Cameras.Add(Camera);
+            }
+        }
+    }
+}
+

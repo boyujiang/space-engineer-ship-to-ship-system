@@ -1,0 +1,252 @@
+IMyTextPanel InfoLCD;
+IMyRadioAntenna Antenna;
+bool initialized;
+string Radiotag = "ColonialMissleTag"; //do not leak this tag
+List<IMyWarhead> Warheads = new List<IMyWarhead>();
+List<IMyThrust> Thrusters = new List<IMyThrust>();
+List<IMyGyro> Gyroscopes = new List<IMyGyro>();
+List<string> gyroYawField = new List<string>();
+List<string> gyroPitchField = new List<string>();
+List<string> gyroRollField = new List<string>();
+List<float> gyroYawFactor = new List<float>();
+List<float> gyroPitchFactor = new List<float>();
+List<float> gyroRollFactor = new List<float>();
+IMyShipController Cockpit;
+Double TargetPitchAngle;
+Double TargetYawAngle;
+double AimTargetRatio = 0.01; 
+List<Vector2D> AimTarget_Data = new List<Vector2D>();
+MatrixD LookAt;
+Vector3D RelativeCoordinate;
+Double MaxAngleAccelerationPitch = 0.000226936458775695*60;
+Double MaxAngleAccelerationYaw = 0.000315249259057238*60;
+Vector3D SavedTargetPosition = new Vector3D();
+long count = 0;
+Double ExplodeDistance = 28;
+public Program()
+{
+    InfoLCD = GridTerminalSystem.GetBlockWithName("Info_LCD") as IMyTextPanel;
+    Antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
+    Runtime.UpdateFrequency = UpdateFrequency.Update1;
+    GridTerminalSystem.GetBlocksOfType(Thrusters);
+    GridTerminalSystem.GetBlocksOfType(Warheads);
+}
+
+public void Main(string argument, UpdateType updateSource)
+{
+    if (count == 0){ 
+       for (int i=0; i < Thrusters.Count; i++){
+            Thrusters[i].Enabled = true;
+            Thrusters[i].ThrustOverridePercentage = 1;
+        } 
+    }
+    count++;
+    if (count < 120){
+     }
+else{
+    if (! initialized){
+        initialize();
+    }
+    else{
+        if (Antenna != null){
+            //Gyroscopes[0].SetValue(gyroYawField[0],3.14f *gyroPitchFactor[0]);
+            InfoLCD.WriteText(Gyroscopes[0].Pitch.ToString() + "\n" , false);
+            InfoLCD.WriteText("Antenna"  + "\n" , true);
+            List<IMyBroadcastListener> listeners = new List<IMyBroadcastListener>();
+            IGC.GetBroadcastListeners(listeners);
+            if (listeners[0].HasPendingMessage){
+                InfoLCD.WriteText("Listener"  + "\n" , true);
+                MyIGCMessage message = new MyIGCMessage();
+                message = listeners[0].AcceptMessage();
+                string temp = message.Data.ToString();
+                Vector3D TargetPosition = new Vector3D();
+                Vector3D.TryParse(temp, out TargetPosition);
+                double Scalar = Math.Sqrt(TargetPosition.X*TargetPosition.X + TargetPosition.Y*TargetPosition.Y + TargetPosition.Z*TargetPosition.Z);
+                if (Math.Abs(Scalar) > 0){
+                    InfoLCD.WriteText(TargetPosition.ToString()  + "\n" , true);
+                    CalculateYaw_Pitch(TargetPosition);
+                    SavedTargetPosition = TargetPosition;
+                    AimTarget();
+                }         
+            }
+            if (SavedTargetPosition.Length() > 0.0001){
+                CalculateYaw_Pitch(SavedTargetPosition);
+                AimTarget();
+                if (RelativeCoordinate.Length() < ExplodeDistance){
+                     for (int i=0; i < Warheads.Count; i++){;
+                        Warheads[i].Detonate();
+                       
+                    } 
+                }
+            }
+         }
+    }
+    }
+}
+
+
+void initialize(){
+    
+       for (int i=0; i < Warheads.Count; i++){;
+            Warheads[i].IsArmed = true;
+            Warheads[i].DetonationTime = 90;
+            Warheads[i].StartCountdown();
+        } 
+    if (Antenna != null){
+        IGC.RegisterBroadcastListener(Radiotag);
+        GridTerminalSystem.GetBlocksOfType(Gyroscopes);
+        Cockpit = GridTerminalSystem.GetBlockWithName("Remote center") as IMyShipController;
+        
+        Antenna = GridTerminalSystem.GetBlockWithName("Antenna") as IMyRadioAntenna;
+        for (int i = 0; i < Gyroscopes.Count; i++)  
+
+                        {  
+
+                                    Base6Directions.Direction gyroUp = Gyroscopes[i].WorldMatrix.GetClosestDirection(Cockpit.WorldMatrix.Up);  
+
+                                    Base6Directions.Direction gyroLeft = Gyroscopes[i].WorldMatrix.GetClosestDirection(Cockpit.WorldMatrix.Left);  
+
+                                    Base6Directions.Direction gyroForward = Gyroscopes[i].WorldMatrix.GetClosestDirection(Cockpit.WorldMatrix.Forward);  
+
+                                    switch (gyroUp)  
+
+                                    { case Base6Directions.Direction.Up: gyroYawField.Add("Yaw"); gyroYawFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Down: gyroYawField.Add("Yaw"); gyroYawFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Left: gyroYawField.Add("Pitch"); gyroYawFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Right: gyroYawField.Add("Pitch"); gyroYawFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Forward: gyroYawField.Add("Roll"); gyroYawFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Backward: gyroYawField.Add("Roll"); gyroYawFactor.Add(1f); break;  
+
+                                    }  
+
+                                    switch (gyroLeft)  
+
+                                    { case Base6Directions.Direction.Up: gyroPitchField.Add("Yaw"); gyroPitchFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Down: gyroPitchField.Add("Yaw"); gyroPitchFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Left: gyroPitchField.Add("Pitch"); gyroPitchFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Right: gyroPitchField.Add("Pitch"); gyroPitchFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Forward: gyroPitchField.Add("Roll"); gyroPitchFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Backward: gyroPitchField.Add("Roll"); gyroPitchFactor.Add(1f); break;  
+
+                                    }  
+
+  
+
+                                    switch (gyroForward)  
+
+                                    { case Base6Directions.Direction.Up: gyroRollField.Add("Yaw"); gyroRollFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Down: gyroRollField.Add("Yaw"); gyroRollFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Left: gyroRollField.Add("Pitch"); gyroRollFactor.Add(1f); break;  
+
+                                      case Base6Directions.Direction.Right: gyroRollField.Add("Pitch"); gyroRollFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Forward: gyroRollField.Add("Roll"); gyroRollFactor.Add(-1f); break;  
+
+                                      case Base6Directions.Direction.Backward: gyroRollField.Add("Roll"); gyroRollFactor.Add(1f); break;  
+
+                                    }
+
+                                   
+
+                                    Gyroscopes[i].GyroOverride = true;
+
+                        }    
+     } 
+    initialized = true;    
+}
+
+void AimTarget(){
+
+    double yaw = 0;
+    double pitch = 0;
+
+    while(AimTarget_Data.Count > 30){
+        AimTarget_Data.RemoveAt(0);
+    }
+    while(AimTarget_Data.Count < 30){
+        AimTarget_Data.Add(new Vector2D(TargetYawAngle, TargetPitchAngle));
+    }
+    AimTarget_Data.RemoveAt(0);
+    AimTarget_Data.Add(new Vector2D(TargetYawAngle, TargetPitchAngle));
+
+
+    double EffectYawVelocity = (AimTarget_Data[AimTarget_Data.Count - 1].X - AimTarget_Data[AimTarget_Data.Count - 2].X)*60;
+    double EffectPitchVelocity = (AimTarget_Data[AimTarget_Data.Count - 1].Y - AimTarget_Data[AimTarget_Data.Count - 2].Y)*60;
+
+    if(EffectYawVelocity*TargetYawAngle < 0){
+
+            double StopTime = Math.Abs(EffectYawVelocity / MaxAngleAccelerationPitch);
+
+            double ArriveTime = Math.Abs(TargetYawAngle / EffectYawVelocity);
+ 
+            if(StopTime <= ArriveTime){
+                yaw = 30 * Math.Abs(TargetYawAngle) / TargetYawAngle;
+            }else{
+                yaw = -30 * Math.Abs(TargetYawAngle) / TargetYawAngle;
+            }
+        }
+    else{
+        yaw = 30 * Math.Abs(TargetYawAngle) / TargetYawAngle;
+    }
+
+    if(EffectPitchVelocity*TargetPitchAngle < 0){
+            double StopTime = Math.Abs(EffectPitchVelocity / MaxAngleAccelerationYaw);
+            double ArriveTime = Math.Abs(TargetPitchAngle / EffectPitchVelocity);
+
+            if(StopTime <= ArriveTime){
+      
+                pitch = 30 * Math.Abs(TargetPitchAngle) / TargetPitchAngle;
+            }else{
+                pitch = -30 * Math.Abs(TargetPitchAngle) / TargetPitchAngle;
+        }
+    }else{
+        pitch = 30 * Math.Abs(TargetPitchAngle) / TargetPitchAngle;
+    }
+
+    
+    Gyroscopes[0].SetValue(gyroYawField[0], (float) yaw *gyroYawFactor[0]);
+    Gyroscopes[0].SetValue(gyroPitchField[0], (float) pitch *gyroPitchFactor[0]);
+    Gyroscopes[0].GyroOverride = true;
+} 
+
+void CalculateYaw_Pitch(Vector3D position){
+    Vector3D Zero = new Vector3D();
+    LookAt = MatrixD.CreateLookAt(Zero, Cockpit.WorldMatrix.Forward, Cockpit.WorldMatrix.Up);
+    RelativeCoordinate = Vector3D.TransformNormal(position - Cockpit.GetPosition(), LookAt);
+    if (RelativeCoordinate.Z < 0){
+        TargetPitchAngle = Math.Atan(RelativeCoordinate.Y/Math.Abs(RelativeCoordinate.Z));
+        TargetYawAngle = Math.Atan(RelativeCoordinate.X/Math.Abs(RelativeCoordinate.Z));
+    }
+
+    else{
+        if (RelativeCoordinate.Y < 0){
+            TargetPitchAngle = Math.Atan(RelativeCoordinate.Y/Math.Abs(RelativeCoordinate.Z)) - Math.PI/2;
+        }
+        else{
+            TargetPitchAngle = Math.Atan(RelativeCoordinate.Y/Math.Abs(RelativeCoordinate.Z)) + Math.PI/2;
+        }
+        
+        if (RelativeCoordinate.X < 0){
+            TargetYawAngle = Math.Atan(RelativeCoordinate.X/Math.Abs(RelativeCoordinate.Z)) - Math.PI/2;
+        }
+        else{
+           TargetYawAngle = Math.Atan(RelativeCoordinate.X/Math.Abs(RelativeCoordinate.Z)) + Math.PI/2;
+        }
+    }
+
+    InfoLCD.WriteText(RelativeCoordinate.Z.ToString()  + "\n" , true);
+    InfoLCD.WriteText(TargetPitchAngle.ToString()  + "\n" , true);
+    InfoLCD.WriteText(TargetYawAngle.ToString()  + "\n" , true);
+}

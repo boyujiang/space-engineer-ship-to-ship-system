@@ -31,12 +31,12 @@ const string Radiotag = "WenYue";
     // P(比例): 决定转头有多快; D(微分): 专门管住 Overshoot 刹车的阻尼; I(积分): 消除最后微小静差
     
     // 俯仰轴 (Pitch/上下) PID 参数
-    public const double P_Pitch = 4.5;
+    public const double P_Pitch = 9.5;
     public const double I_Pitch = 0.1;
     public const double D_Pitch = 1.8;
 
     // 偏航轴 (Yaw/左右) PID 参数
-    public const double P_Yaw = 4.5;
+    public const double P_Yaw = 10.5;
     public const double I_Yaw = 0.1;
     public const double D_Yaw = 1.8;
 
@@ -122,7 +122,7 @@ const string Radiotag = "WenYue";
             for (int i = 0; i < ThrustList.Count; i++) {
                 if (ThrustList[i] == null) continue;
                 ThrustList[i].Enabled = true;
-                ThrustList[i].ThrustOverridePercentage = 1f;
+                ThrustList[i].ThrustOverridePercentage = 0.75f;
 
             }  
             if (Connector.IsConnected){Connector.Disconnect();}
@@ -130,7 +130,7 @@ const string Radiotag = "WenYue";
             if(Tank.Stockpile){Tank.Stockpile=false;}
         }
         count++;
-        if (count < 90) return;
+        if (count < 60) return;
 
         // 获取目标空间坐标 (假设无线电拿到了 SavedTargetPosition)
         GetTarget();
@@ -144,7 +144,7 @@ const string Radiotag = "WenYue";
             //MainCockpit.WorldMatrix本身带translation但这里默认TransformNormal计算时没有用到
             //计算误差角度 (通过弧度直接作为 PID 输入)
             double distanceDepth = TargetRelativePos.Z;
-            //if (distanceDepth < 0.1) distanceDepth = 0.1; // 防止除以 0
+            //if (Math.Abs(distanceDepth) < 0.1) distanceDepth = 0.1; // 防止除以 0
 
             // 核心解算：用你推导的 Azimuth 和 Height 算出当前的绝对角度误差
             double errorYaw = Math.Atan2(TargetRelativePos.X, -distanceDepth);   // 目标偏航误差
@@ -167,7 +167,8 @@ const string Radiotag = "WenYue";
 
             //根据角度偏差调整thruster功率
             double totalAngleError = Math.Sqrt(errorPitch * errorPitch + errorYaw * errorYaw);
-            float deceleration = (float)ThrustPID.Control(totalAngleError);
+            //float deceleration = (float)ThrustPID.Control(totalAngleError);
+            double deceleration =Math.Min(totalAngleError / 0.5, 1.0);
             double thrustOutput = 1.0 - deceleration;
             for (int i = 0; i < ThrustList.Count; i++) {
                 if (ThrustList[i] == null) continue;

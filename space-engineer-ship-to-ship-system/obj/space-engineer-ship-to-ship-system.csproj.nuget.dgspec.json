@@ -1,0 +1,77 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system.csproj": {}
+  },
+  "projects": {
+    "D:\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system.csproj",
+        "projectName": "space-engineer-ship-to-ship-system",
+        "projectPath": "D:\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system.csproj",
+        "packagesPath": "C:\\Users\\12208\\.nuget\\packages\\",
+        "outputPath": "D:\\space-engineer-ship-to-ship-system\\space-engineer-ship-to-ship-system\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\12208\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netframework48"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "targetAlias": "netframework48",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net48": {
+          "targetAlias": "netframework48",
+          "dependencies": {
+            "Mal.Mdk2.PbAnalyzers": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.1.16, )"
+            },
+            "Mal.Mdk2.PbPackager": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.2.3, )"
+            },
+            "Mal.Mdk2.References": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.2.8, )"
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )",
+              "autoReferenced": true
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

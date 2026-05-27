@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "dgSpecHash": "cYFKJ8rnygA=",
+  "success": true,
+  "projectFilePath": "D:\\space-engineer-ship-to-ship-system\\Tracking_Camera\\Tracking_Camera.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\12208\\.nuget\\packages\\mal.mdk2.pbanalyzers\\2.1.16\\mal.mdk2.pbanalyzers.2.1.16.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\mal.mdk2.pbpackager\\2.2.3\\mal.mdk2.pbpackager.2.2.3.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\mal.mdk2.references\\2.2.8\\mal.mdk2.references.2.2.8.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\9.0.0\\microsoft.bcl.asyncinterfaces.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.build.framework\\17.14.28\\microsoft.build.framework.17.14.28.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.build.utilities.core\\17.14.28\\microsoft.build.utilities.core.17.14.28.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.io.redist\\6.1.0\\microsoft.io.redist.6.1.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.net.stringtools\\17.14.28\\microsoft.net.stringtools.17.14.28.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.buffers\\4.6.0\\system.buffers.4.6.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.collections.immutable\\9.0.0\\system.collections.immutable.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.configuration.configurationmanager\\9.0.0\\system.configuration.configurationmanager.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.diagnostics.diagnosticsource\\9.0.0\\system.diagnostics.diagnosticsource.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.io.pipelines\\9.0.0\\system.io.pipelines.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.memory\\4.6.0\\system.memory.4.6.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.numerics.vectors\\4.6.0\\system.numerics.vectors.4.6.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.1.0\\system.runtime.compilerservices.unsafe.6.1.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.text.encodings.web\\9.0.0\\system.text.encodings.web.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.text.json\\9.0.0\\system.text.json.9.0.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.threading.tasks.extensions\\4.6.0\\system.threading.tasks.extensions.4.6.0.nupkg.sha512",
+    "C:\\Users\\12208\\.nuget\\packages\\system.valuetuple\\4.5.0\\system.valuetuple.4.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}

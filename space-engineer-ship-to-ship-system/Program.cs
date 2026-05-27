@@ -150,6 +150,11 @@ const string Radiotag = "WenYue";
             double errorYaw = Math.Atan2(TargetRelativePos.X, -distanceDepth);   // 目标偏航误差
             double H_dist=Math.Sqrt(TargetRelativePos.X * TargetRelativePos.X + distanceDepth * distanceDepth);
             double errorPitch = Math.Atan2(TargetRelativePos.Y, H_dist); 
+
+            if(TargetRelativePos.Z > 0)
+                {
+                    errorPitch *= 0.1;
+                }
             
             // 强制要求导弹在飞行中不自旋，锁定 Roll 角度误差为 0 
             double errorRoll = 0; 
